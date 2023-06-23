@@ -6,3 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+# Common
+rayon = "1.6.1"
+rand = "0.8.5"
+
+# Halo2
+halo2_proofs = "0.3.0"
+
+# PSE
+halo2curves = {git = "https://github.com/privacy-scaling-explorations/halo2curves.git", version = "0.3.3"}
