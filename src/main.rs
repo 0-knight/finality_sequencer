@@ -18,7 +18,7 @@ fn main() {
     // === User side ===//
     // 4. Calculate a challenge value e using Hashing H : e = H ( R || P_u || m )
     // 5. Calculate a partial schnorr signature s_u
-        // s = r_u + k_u * e
+        // s_u = r_u + k_u * e
     // (Value public to anyone) P_u
     // (Value delivered to Sequencer) s_u, R_u , m
     // (test) Verify the signature
@@ -27,7 +27,7 @@ fn main() {
     
     // === Sequencer side ===//
     // 4. Calculate a protection value X
-        // I = H ( P || P_s ), w = H ( I || P ) , w_s = H ( I || P_s )
+        // I = H ( P_u || P_s ), w = H ( I || P ) , w_s = H ( I || P_s )
         // X = w * P + w_s * P_s
     // 5. Calculate R : R = R_u + R_s 
     // 6. Calculate a challenge e with index i 
@@ -49,4 +49,6 @@ fn main() {
 fn halo2_test() {
     let vsc = halo2::rand_vec_scalar(3);
     print!("{:?}", vsc);
+
+    //halo2::gen_key_pair();
 }

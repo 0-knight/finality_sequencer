@@ -13,6 +13,9 @@ rand = "0.8.5"
 
 # Halo2
 halo2_proofs = "0.3.0"
+halo2_gadgets = "0.3.0"
 
 # PSE
 halo2curves = {git = "https://github.com/privacy-scaling-explorations/halo2curves.git", version = "0.3.3"}
+halo2_pse = { package= "halo2_proofs",  git = "https://github.com/privacy-scaling-explorations/halo2", version = "0.2.0" }
+poseidon = { git = "https://github.com/privacy-scaling-explorations/poseidon.git"}
