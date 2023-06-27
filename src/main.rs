@@ -28,7 +28,7 @@ fn main() {
     // === Sequencer side ===//
     // 4. Calculate a protection value X
         // I = H ( P_u || P_s ), w = H ( I || P ) , w_s = H ( I || P_s )
-        // X = w * P + w_s * P_s
+        // X = w_u * P_u + w_s * P_s
     // 5. Calculate R : R = R_u + R_s 
     // 6. Calculate a challenge e with index i 
         // this means that the sequencer commits the transaction to index i
