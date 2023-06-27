@@ -4,7 +4,7 @@ use rand::{thread_rng, rngs::OsRng};
 use rayon::prelude::*;
 
 use halo2curves::{
-    bn256::{Fr as Scalar, G1Affine as Affine, G1 as Point}, ff::FromUniformBytes, group::Group,
+    bn256::{Fr as Scalar, G1Affine as Affine, G1 as Point}, ff::FromUniformBytes, group::{Group, GroupEncoding},
 };
 use halo2curves::ff::PrimeField;
 use halo2curves::group::Curve;
@@ -233,7 +233,9 @@ pub fn test_schnorr_sequencer()
 
     // User side
         // create the partial signature s_u : s_u = r_u + k_u * w_u * e
-    let s_u = r_u * k_u;  // [WIP] need to multiply 'Fr' with 'Fq'
+    //let s_u : Fr = r_u + e * k_u.into() * w_u.into();  // [WIP] need to multiply 'Fr' with 'Fq'
+    let s_u = k_u;  // [WIP] need to multiply 'Fr' with 'Fq'
+    
         // User -> Sequencer : s_u, message
 
     // Sequencer side
@@ -260,4 +262,58 @@ pub fn test_schnorr_sequencer()
 
     // ======== Call API to Smart contract on StarkNet ========//
 
+}
+
+#[test]
+pub fn test_curve_feature() {
+    use halo2curves::bn256::G1;
+    use halo2curves::CurveExt;
+
+    let projective_point = G1::random(OsRng);
+    // let affine_point: G::AffineExt = projective_point.into();
+    let affine_point: <halo2curves::bn256::G1 as CurveExt>::AffineExt = projective_point.into();
+
+    // Converts this element into its byte encoding. This may or may not support encoding the identity.
+    let projective_repr = projective_point.to_bytes();
+    let affine_repr = affine_point.to_bytes();
+
+    let projective_point_rec = G1::from_bytes(&projective_repr).unwrap();
+    let affine_point_rec = G1::from_bytes_unchecked(&affine_repr).unwrap();
+
+}
+
+#[test]
+pub fn test_multiplication() {
+
+    use halo2curves::bn256::G1 as G;
+    use halo2curves::CurveExt;
+
+    let s1 = <halo2curves::bn256::G1 as CurveExt>::ScalarExt::random(OsRng);
+    //let s1 = G::random(OsRng);
+    let s2 = <halo2curves::bn256::G1 as CurveExt>::ScalarExt::random(OsRng);
+
+    let t0 = G::identity() * s1;
+    assert!(bool::from(t0.is_identity()));
+
+    let a = G::random(OsRng);
+    //let t0 = a * G::ScalarExt::ONE;
+    let t0 = a * <halo2curves::bn256::G1 as CurveExt>::ScalarExt::ONE;
+    assert_eq!(a, t0);
+
+    let t0 = a * <halo2curves::bn256::G1 as CurveExt>::ScalarExt::ZERO;
+    assert!(bool::from(t0.is_identity()));
+
+    let t0 = a * s1 + a * s2;
+
+    let s3 = s1 + s2;
+    let t1 = a * s3;
+
+    assert_eq!(t0, t1);
+
+    let mut t0 = a * s1;
+    let mut t1 = a * s2;
+    t0 += t1;
+    let s3 = s1 + s2;
+    t1 = a * s3;
+    assert_eq!(t0, t1);
 }
