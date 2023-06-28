@@ -169,9 +169,11 @@ pub fn test_schnorr_sequencer()
 
     use halo2curves::bn256::{Fr, Fq};
     use halo2curves::bn256::G1 as Group;
+    use halo2curves::CurveExt;
 
-    // message
-    let message = Group::random(OsRng).to_affine();    
+    // transaction(message) and its hash!!
+    let message_plain = Group::random(OsRng).to_affine();    
+    let message = poseidon_hash(vec![message_plain.x, message_plain.y]);
 
     // Group Generator
     let g = Group::generator();
@@ -193,8 +195,6 @@ pub fn test_schnorr_sequencer()
     let r_s = Fr::random(OsRng);
     let R_s = (g * r_s).to_affine();
 
-    // ==== WIP.. ==== //
-
         // calculate a challenge e 
         // 1. I = H ( P_u || P_s ), w_u = H ( I || P_u ) , w_s = H ( I || P_s )
     let input_I = vec![P_u.x, P_u.y, P_s.x, P_s.y];
@@ -212,6 +212,7 @@ pub fn test_schnorr_sequencer()
     let X_y = w_s * P_u.y + w_s * P_s.y;    // Is it correct way to multiply field * Group??
 
     // without to_affine, there's z value in the group
+    // X is the weighted public key by the MuSig scheme
     let mut X = Group::generator().to_affine();
     X.x = X_x;
     X.y = X_y;
@@ -226,32 +227,48 @@ pub fn test_schnorr_sequencer()
         // this means that the sequencer commits the transaction to index i
         // e = H ( R || X || m || i)
     let index = Fq::from(0);
-    let input_e = vec![R.x, R.y, X.x, X.y, message.x, message.y, index];
+    let input_e = vec![R.x, R.y, X.x, X.y, message, index];
     let e = poseidon_hash(input_e);
 
         // 7. Sequencer -> User : R_s, P_s, i
 
     // User side
         // create the partial signature s_u : s_u = r_u + k_u * w_u * e
-    //let s_u : Fr = r_u + e * k_u.into() * w_u.into();  // [WIP] need to multiply 'Fr' with 'Fq'
-    let s_u = k_u;  // [WIP] need to multiply 'Fr' with 'Fq'
-    
+        //let s_u : Fr = r_u + e * k_u.into() * w_u.into();  // [WIP] need to multiply 'Fr' with 'Fq'
+        // r_u, k_u : scalar (Fr)
+        // w_u, e : base field. (Fq)
+    let w_u_fr = Fr::from_repr(w_u.to_repr()).unwrap(); // Fq -> Fr
+    let e_fr = Fr::from_repr(e.to_repr()).unwrap();     // [WIP] Is it correct way to convert it? 
+                                                            // even possible from Fr to Fq or either way?!
+    //let s_u : Fr = e.mul(k_u.into());  // [WIP] need to multiply 'Fr' with 'Fq' [Done]
+    //let s_u = e.mul(<Group as CurveExt>::ScalarExt::from(k_u));
+    let s_u = r_u + k_u * w_u_fr * e_fr;
         // User -> Sequencer : s_u, message
 
     // Sequencer side
         // 8. Verify the partial signature from the user
         // s_u * g = R_u + w_u * P_u * e
     let verify_left_val = (g * s_u).to_affine();
-    let tmp_x = w_u * P_u.x;
-    let tmp_y = w_u * P_u.y;    // Is it correct way to multiply field * Group??
-    let mut tmp = Group::generator().to_affine();
-    tmp.x = tmp_x;
-    tmp.y = tmp_y;
-        // 9. create the partial signature on the sequencing side.
-        // s_u : s_u = r_u + k_u * w_u * e
-    let s_s = r_s * k_s; // [WIP] need to multiply 'Fr' with 'Fq'
+    let right_x = w_u * P_u.x * e;
+    let right_y = w_u * P_u.y * e;    // Is it correct way to multiply field * Group??
+    let mut verify_right_val = Group::generator().to_affine();
+    verify_right_val.x = right_x;
+    verify_right_val.y = right_y;
 
-    let verify_right_val = (R_u + tmp).to_affine();   // [WIP] need to multiply tmp with e
+    println!("left : {:?}", verify_left_val);
+    println!("right : {:?}", verify_right_val);
+
+
+        // 9. create the partial signature on the sequencing side.
+        // s_s : s_s = r_s + k_s * w_s * e
+    let w_s_fr = Fr::from_repr(w_s.to_repr()).unwrap();
+    let e_fr = Fr::from_repr(e.to_repr()).unwrap();
+
+    // let s_s = r_s * k_s; // [WIP] need to multiply 'Fr' with 'Fq' [Done]
+    let s_s = r_s + k_s * w_s_fr * e_fr;
+
+
+    //let verify_right_val = (R_u + tmp).to_affine();   // [WIP] need to multiply tmp with e
     //assert!(verify_left_val == verify_right_val);               // [WIP] verify!!
 
         // 9. create full signature!!
