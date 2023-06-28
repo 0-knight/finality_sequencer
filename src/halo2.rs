@@ -164,6 +164,27 @@ pub fn test_poseidon_hash() {
 }
 
 #[test]
+pub fn test_conversion() {
+
+    use halo2curves::bn256::{Fr, Fq};
+    use halo2curves::bn256::G1 as Group;
+
+    let fr_val = Fr::random(OsRng);
+    let fq_val = Fq::random(OsRng);
+    let g1_val = Group::generator();
+
+    let tmp = g1_val * fr_val;
+    let tmp_1 = g1_val.to_affine() * fr_val;
+    let tmp_fq = Fq::from_repr(fr_val.to_repr()).unwrap();
+    let tmp_fr = Fr::from_repr(tmp_fq.to_repr()).unwrap();
+    let tmp_verify = g1_val * tmp_fr;
+
+    println!("{:?}", tmp);
+    println!("{:?}", tmp_1);
+    println!("{:?}", tmp_verify)
+}
+
+#[test]
 pub fn test_schnorr_sequencer() 
 {
 
@@ -216,7 +237,6 @@ pub fn test_schnorr_sequencer()
     let mut X = Group::generator().to_affine();
     X.x = X_x;
     X.y = X_y;
-
 //    println!("{:?} {:?} {:?}", X_x, X_y, X);
 
     // Sequencer side
@@ -247,16 +267,33 @@ pub fn test_schnorr_sequencer()
 
     // Sequencer side
         // 8. Verify the partial signature from the user
-        // s_u * g = R_u + w_u * P_u * e
+        // s_u * g = R_u + w_u * P_u * e = r_u * G + w_u * (k_u * G) * e 
+                                        // since s_u = r_u + w_u * k_u * e
     let verify_left_val = (g * s_u).to_affine();
-    let right_x = w_u * P_u.x * e;
-    let right_y = w_u * P_u.y * e;    // Is it correct way to multiply field * Group??
+    let right_x = R_u.x + (w_u * P_u.x * e);
+    let right_y = R_u.y + (w_u * P_u.y * e);    // Is it correct way to multiply field * Group??
     let mut verify_right_val = Group::generator().to_affine();
     verify_right_val.x = right_x;
     verify_right_val.y = right_y;
 
+    // converting into Fr then calculate.. [Result] No different from calculate in Fq type!!
+    /*
+    let tmp_x = Fr::from_repr(R_u.x.to_repr()).unwrap() + 
+                    Fr::from_repr(w_u.to_repr()).unwrap() * Fr::from_repr(P_u.x.to_repr()).unwrap() * Fr::from_repr(e.to_repr()).unwrap();
+    let tmp_y = Fr::from_repr(R_u.y.to_repr()).unwrap() + 
+                    Fr::from_repr(w_u.to_repr()).unwrap() * Fr::from_repr(P_u.y.to_repr()).unwrap() * Fr::from_repr(e.to_repr()).unwrap();
+
+    let mut tmp = Group::generator().to_affine();
+    tmp.x = Fq::from_repr(tmp_x.to_repr()).unwrap();
+    tmp.y = Fq::from_repr(tmp_y.to_repr()).unwrap();
+    */
+
     println!("left : {:?}", verify_left_val);
     println!("right : {:?}", verify_right_val);
+    // println!("tmp_fr : {:?}", verify_right_val);
+    // assert_eq!(verify_left_val, verify_right_val);
+
+
 
 
         // 9. create the partial signature on the sequencing side.
