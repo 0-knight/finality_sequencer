@@ -1,4 +1,5 @@
 mod halo2;
+mod schnorr;
 
 fn main() {
     println!("Finality sequencer!");

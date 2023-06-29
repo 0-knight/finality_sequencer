@@ -216,6 +216,8 @@ pub fn test_schnorr_sequencer()
     let r_s = Fr::random(OsRng);
     let R_s = (g * r_s).to_affine();
 
+//    let aa = poseidon_hash::<Fr>(vec![r_s]);
+
         // calculate a challenge e 
         // 1. I = H ( P_u || P_s ), w_u = H ( I || P_u ) , w_s = H ( I || P_s )
     let input_I = vec![P_u.x, P_u.y, P_s.x, P_s.y];
